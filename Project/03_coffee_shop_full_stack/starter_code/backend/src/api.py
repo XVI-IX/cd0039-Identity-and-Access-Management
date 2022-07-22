@@ -28,6 +28,18 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route("/drinks", methods=['GET'])
+def drinks():
+    drinks = Drink.query.all()
+    short_drinks = [drink.short() for drink in drinks]
+    if not drinks:
+        abort(404)
+    
+    return jsonify({
+        # "status_code": 200,
+        "success": True,
+        "drinks":short_drinks
+    })
 
 
 '''
@@ -38,6 +50,18 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route("/drinks-detail", methods=['GET'])
+def get_drinks_detail():
+    drinks = Drink.query.all()
+    long_drinks = [drink.long() for drink in drinks]
+
+    if not drinks:
+        abort(400)
+    
+    return jsonify({
+        "success": True,
+        "drinks": long_drinks
+    })
 
 
 '''
@@ -49,6 +73,33 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+@app.route("/drinks", methods=["POST"])
+def new_drink():
+    data = request.get_json()
+
+    if not data:
+        abort(404)
+
+    title = data.get("title")
+    recipe = data.get("recipe")
+
+    drink = Drink(
+            title=title,
+            recipe=recipe
+        )
+
+    try:
+       drink.insert()
+       return jsonify({
+        "success": True,
+        "drink": drink.long()
+       })
+
+    except Exception as e:
+        print(e)
+        abort(500)
+
+   
 
 
 '''
@@ -62,6 +113,29 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route("/drinks/<drink_id>", methods=["PATCH"])
+def edit_drink(drink_id):
+    drink = Drink.query.get(drink_id)
+    data = request.get_json()
+
+    if not drink:
+        abort(404)
+
+    drink.title = data.get("title")
+    drink.recipe = data.get("recipe")
+
+    try:
+        drink.update()
+
+        return jsonify({
+            "success": True,
+            "drinks": [drink.long()]
+        })
+    except Exception as e:
+        print(e)
+        abort(500)
+
+    
 
 
 '''
@@ -74,6 +148,24 @@ CORS(app)
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+@app.route("/drinks/<drink_id>", methods=["PATCH"])
+def delete_drink(drink_id):
+    drink = Drink.query.get(drink_id)
+
+    if not drink:
+        abort(404)
+
+    try:
+        drink.delete()
+
+        return jsonify({
+            "success": True,
+            "delete": drink_id
+        })
+    except Exception as e:
+        print(e)
+        abort(500)
+
 
 
 # Error Handling
@@ -101,12 +193,26 @@ def unprocessable(error):
                     }), 404
 
 '''
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "success": False,
+        "message": "Resource not found",
+        "error": "404"
+    }), 404
 
 '''
 @TODO implement error handler for 404
     error handler should conform to general task above
 '''
 
+@app.errorhandler(500)
+def server_error():
+    return jsonify({
+        "success": False,
+        "message": "internal server error",
+        "error": 500
+    }), 500
 
 '''
 @TODO implement error handler for AuthError
