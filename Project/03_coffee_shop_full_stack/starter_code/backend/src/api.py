@@ -29,7 +29,7 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 @app.route("/drinks", methods=['GET'])
-@requires_auth(permission="get:drinks")
+# @requires_auth(permission="get:drinks")
 def drinks():
     drinks = Drink.query.all()
     short_drinks = [drink.short() for drink in drinks]
@@ -122,11 +122,13 @@ def edit_drink(drink_id):
     drink = Drink.query.get(drink_id)
     data = request.get_json()
 
+    recipe = data.get("recipe")
+
     if not drink:
         abort(404)
 
     drink.title = data.get("title")
-    drink.recipe = data.get("recipe")
+    drink.recipe = recipe if type(recipe) == str else json.dumps(recipe)
 
     try:
         drink.update()
@@ -212,7 +214,7 @@ def not_found(error):
 '''
 
 @app.errorhandler(500)
-def server_error():
+def server_error(error):
     return jsonify({
         "success": False,
         "message": "internal server error",
@@ -223,3 +225,10 @@ def server_error():
 @DONE implement error handler for AuthError
     error handler should conform to general task above
 '''
+@app.errorhandler(AuthError)
+def auth_error(error):
+    return jsonify({
+        "success": False,
+        "message": "Authentication Error",
+        "error": AuthError(error)
+    })

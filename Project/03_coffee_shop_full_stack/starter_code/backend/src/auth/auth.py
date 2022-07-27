@@ -3,11 +3,13 @@ from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
+from dotenv import load_dotenv
+import os
 
 
 AUTH0_DOMAIN = 'xviix.us.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'ucoffee'
+API_AUDIENCE = os.envirom.get("audience")
 
 ## AuthError Exception
 '''
@@ -60,13 +62,19 @@ def get_token_auth_header():
 '''
 def check_permissions(permission, payload):
 
-    if "permissions" not in payload:
+    if "permission" not in payload:
         raise AuthError("Bad Request", 400)
     
-    if permission not in payload.permissions:
-        raise AuthError("Unauthorized", 403)
+    # if permission not in payload.permissions:
+    #     raise AuthError("Unauthorized", 403)
+    if payload["permission"]:
+
+        permissions = payload["permission"]
+
+        if (permission not in permissions):
+            raise AuthError("Unauthorized", 403)
     
-    return True
+        return True
 
     # raise Exception('Not Implemented')
 
